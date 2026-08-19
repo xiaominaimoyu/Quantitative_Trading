@@ -80,17 +80,17 @@ if (Test-Path $pythonExe) {
             exit 1
         }
         Write-Host "✅ Python依赖安装成功" -ForegroundColor Green
-        
-        # 安装本地包
-        Write-Host "⚠️ 安装quant_trading包..." -ForegroundColor Yellow
-        $backendDir = Join-Path $ProjectRoot "backend"
-        & $pythonExe -m pip install --no-deps -e $backendDir
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ quant_trading包安装失败" -ForegroundColor Red
-            exit 1
-        }
-        Write-Host "✅ quant_trading包安装成功" -ForegroundColor Green
     }
+    
+    # 安装本地包（无论依赖是否已安装，都要确保包已安装）
+    Write-Host "⚠️ 安装quant_trading包..." -ForegroundColor Yellow
+    $backendDir = Join-Path $ProjectRoot "backend"
+    & $pythonExe -m pip install --no-deps -e $backendDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ quant_trading包安装失败" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "✅ quant_trading包安装成功" -ForegroundColor Green
 } else {
     Write-Host "❌ Python虚拟环境未找到，请先创建虚拟环境" -ForegroundColor Red
     exit 1
