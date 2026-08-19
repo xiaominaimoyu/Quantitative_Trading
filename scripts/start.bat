@@ -5,9 +5,13 @@ chcp 65001 >nul
 REM 一键启动量化交易平台
 REM 使用方法: start.bat
 
+title 量化交易平台 - 启动脚本
+
 echo =========================================
 echo   量化交易平台 - 一键启动脚本
 echo =========================================
+echo.
+echo 正在启动服务，请稍候...
 echo.
 
 REM 获取项目根目录
@@ -21,7 +25,8 @@ REM 检查Docker是否运行
 echo [1/5] 检查Docker状态...
 docker info >nul 2>&1
 if errorlevel 1 (
-    echo ❌ Docker未运行，请先启动Docker Desktop
+    echo ❌ 错误：Docker未运行，请先启动Docker Desktop
+    echo.
     pause
     exit /b 1
 )
@@ -34,7 +39,8 @@ docker ps -a --filter "name=quant_trading_postgres" --format "{{.Status}}" | fin
 if errorlevel 1 (
     docker start quant_trading_postgres
     if errorlevel 1 (
-        echo ❌ PostgreSQL启动失败
+        echo ❌ 错误：PostgreSQL启动失败
+        echo.
         pause
         exit /b 1
     )
@@ -52,7 +58,8 @@ if exist "%PROJECT_ROOT%\backend\.venv" (
     echo ⚠️ Python虚拟环境不存在，正在创建...
     py -3.14 -m venv "%PROJECT_ROOT%\backend\.venv"
     if errorlevel 1 (
-        echo ❌ Python虚拟环境创建失败
+        echo ❌ 错误：Python虚拟环境创建失败
+        echo.
         pause
         exit /b 1
     )
@@ -75,7 +82,8 @@ if exist "%PYTHON_EXE%" (
         echo ⚠️ 正在安装Python依赖...
         %PYTHON_EXE% -m pip install -r "%PROJECT_ROOT%\backend\requirements.txt"
         if errorlevel 1 (
-            echo ❌ Python依赖安装失败
+            echo ❌ 错误：Python依赖安装失败
+            echo.
             pause
             exit /b 1
         )
@@ -86,13 +94,15 @@ if exist "%PYTHON_EXE%" (
     echo ⚠️ 安装quant_trading包...
     %PYTHON_EXE% -m pip install --no-deps -e "%PROJECT_ROOT%\backend"
     if errorlevel 1 (
-        echo ❌ quant_trading包安装失败
+        echo ❌ 错误：quant_trading包安装失败
+        echo.
         pause
         exit /b 1
     )
     echo ✅ quant_trading包安装成功
 ) else (
-    echo ❌ Python虚拟环境未找到
+    echo ❌ 错误：Python虚拟环境未找到
+    echo.
     pause
     exit /b 1
 )
@@ -100,13 +110,13 @@ if exist "%PYTHON_EXE%" (
 REM 启动API服务
 echo.
 echo [5/5] 启动服务...
-echo 启动API服务 (端口8000)...
+echo 正在启动API服务 (端口8000)...
 
 REM 创建日志目录
 if not exist "%PROJECT_ROOT%\logs" mkdir "%PROJECT_ROOT%\logs"
 
 REM 启动API服务（后台运行）
-start "API服务" /MIN "%PYTHON_EXE%" "%PROJECT_ROOT%\backend\quant_trading\main_uvicorn.py"
+start "API服务" /MIN cmd /k "%PYTHON_EXE%" "%PROJECT_ROOT%\backend\quant_trading\main_uvicorn.py"
 
 REM 等待3秒检查服务是否启动
 timeout /t 3 /nobreak >nul
@@ -123,6 +133,18 @@ echo 日志文件:
 echo   - API日志: %PROJECT_ROOT%\logs\api.log
 echo   - API错误: %PROJECT_ROOT%\logs\api_error.log
 echo.
-echo 要停止服务，请运行: stop.bat
 echo.
+echo =========================================
+echo   重要提示
+echo =========================================
+echo.
+echo 1. API服务正在后台运行（最小化窗口）
+necho 2. 要查看API日志，请检查 logs\api.log 文件
+necho 3. 要停止API服务，请关闭API服务窗口
+necho 4. 要停止所有服务，请运行 stop.bat
+necho.
+echo =========================================
+echo.
+
+REM 保持窗口打开
 pause
