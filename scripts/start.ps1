@@ -102,7 +102,7 @@ $apiLogPath = Join-Path $logsPath "api.log"
 $apiErrorLogPath = Join-Path $logsPath "api_error.log"
 
 $apiProcess = Start-Process -FilePath $pythonExe `
-    -ArgumentList "-m uvicorn quant_trading.main:app --no-reload --port 8000 --host 127.0.0.1" `
+    -ArgumentList "-m uvicorn quant_trading.main:app --port 8000 --host 127.0.0.1" `
     -RedirectStandardOutput $apiLogPath `
     -RedirectStandardError $apiErrorLogPath `
     -WindowStyle Hidden -PassThru `
