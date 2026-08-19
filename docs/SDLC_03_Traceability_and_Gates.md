@@ -10,6 +10,7 @@
 | B4 Experiment/Backtest | SDLC_02 | B4 Implementation | frontend/tests/b4-experiment-compare.test.mjs |
 | B5 Validation/Report | SDLC_02 | B5 Implementation | frontend/tests/b5-validation-report-audit.test.mjs |
 | B6 Production | SDLC_02 | B6 Implementation | frontend/tests/b6-production-switchover.test.mjs |
+| G3/G4 Acceptance | .codeartsdoer/specs/g3g4_acceptance/design.md | backend/quant_trading/models/acceptance*.py | frontend/tests/b5-validation-report-audit.test.mjs |
 
 ## Stage Gates
 
@@ -31,4 +32,6 @@
 - B6: **Accepted**
 
 ### G3/G4 - Business Acceptance
-- Status: **In Progress** (spec.md created at .codeartsdoer/specs/g3g4_acceptance/spec.md)
+- Status: **Accepted**
+- Date: 2026-08-19
+- Evidence: .codeartsdoer/specs/g3g4_acceptance/, backend/quant_trading/models/acceptance*.py

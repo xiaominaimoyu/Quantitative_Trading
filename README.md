@@ -14,7 +14,7 @@
 | B4 实验、回测、任务控制 | 技术退出条件已通过；基线锚点为 `b4-baseline`；详见 [B4 实施证据](docs/B4_Implementation_Evidence.md) |
 | B5 验证、报告与审计 | 技术退出条件已通过；基线锚点为 `b5-baseline`；详见 [B5 实施证据](docs/B5_Implementation_Evidence.md) |
 | B6 全真实切换、CI、备份与 SBOM | 技术退出条件已通过；基线锚点为 `b6-baseline`；详见 [B6 实施证据](docs/B6_Implementation_Evidence.md) |
-| G3/G4 业务验收 | 未开始；不构成远程部署、模拟盘或实盘批准 |
+| G3/G4 业务验收 | 已实现；基线锚点为 `g3g4-baseline`；详见 [G3/G4 实施证据](docs/G3G4_Implementation_Evidence.md) |
 | AI 助手、模拟盘、实盘 | 不在当前实现范围；实盘明确未授权 |
 
 权威状态与证据见 [B2 实施证据](docs/B2_Implementation_Evidence.md)、[B2.1 基线收口执行包](docs/B2_1_Baseline_Closeout.md)、[B3 实施证据](docs/B3_Implementation_Evidence.md)、[B4 实施证据](docs/B4_Implementation_Evidence.md)、[G1/G2 执行包](docs/G1_G2_Execution_Package.md)、[ADR 索引](docs/adr/README.md)和 [SDLC 阶段门](docs/SDLC_03_Traceability_and_Gates.md)。历史收口文件是对应日期的证据快照，不代表其后的生产能力已经实现。
