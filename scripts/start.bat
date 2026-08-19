@@ -139,9 +139,9 @@ echo   重要提示
 echo =========================================
 echo.
 echo 1. API服务正在后台运行（最小化窗口）
-necho 2. 要查看API日志，请检查 logs\api.log 文件
-necho 3. 要停止API服务，请关闭API服务窗口
-necho 4. 要停止所有服务，请运行 stop.bat
+ echo 2. 要查看API日志，请检查 logs\api.log 文件
+ echo 3. 要停止API服务，请关闭API服务窗口
+ echo 4. 要停止所有服务，请运行 stop.bat
 necho.
 echo =========================================
 echo.
