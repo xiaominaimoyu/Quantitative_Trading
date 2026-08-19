@@ -1,150 +1,150 @@
 ﻿@echo off
-REM 设置控制台使用UTF-8编码
+REM Set console to UTF-8 encoding
 chcp 65001 >nul
 
-REM 一键启动量化交易平台
-REM 使用方法: start.bat
+REM Quantitative Trading Platform - Start Script
+REM Usage: start.bat
 
-title 量化交易平台 - 启动脚本
+title Quantitative Trading Platform - Start
 
 echo =========================================
-echo   量化交易平台 - 一键启动脚本
+echo   Quantitative Trading Platform - Start
 echo =========================================
 echo.
-echo 正在启动服务，请稍候...
+echo Starting services, please wait...
 echo.
 
-REM 获取项目根目录（使用引号处理空格）
+REM Get project root directory
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%.."
 
-echo 项目根目录: "%PROJECT_ROOT%"
+echo Project root: "%PROJECT_ROOT%"
 echo.
 
-REM 检查Docker是否运行
-echo [1/5] 检查Docker状态...
+REM Check Docker status
+echo [1/5] Checking Docker status...
 docker info >nul 2>&1
 if errorlevel 1 (
-    echo [错误] Docker未运行，请先启动Docker Desktop
+    echo [ERROR] Docker is not running, please start Docker Desktop first
     echo.
     pause
     exit /b 1
 )
-echo [OK] Docker运行正常
+echo [OK] Docker is running
 
-REM 启动PostgreSQL
+REM Start PostgreSQL
 echo.
-echo [2/5] 启动PostgreSQL数据库...
+echo [2/5] Starting PostgreSQL database...
 docker ps -a --filter "name=quant_trading_postgres" --format "{{.Status}}" | findstr "Up" >nul 2>&1
 if errorlevel 1 (
     docker start quant_trading_postgres
     if errorlevel 1 (
-        echo [错误] PostgreSQL启动失败
+        echo [ERROR] PostgreSQL start failed
         echo.
         pause
         exit /b 1
     )
-    echo [OK] PostgreSQL启动成功
+    echo [OK] PostgreSQL started successfully
 ) else (
-    echo [OK] PostgreSQL已运行
+    echo [OK] PostgreSQL is already running
 )
 
-REM 检查Python虚拟环境
+REM Check Python virtual environment
 echo.
-echo [3/5] 检查Python虚拟环境...
+echo [3/5] Checking Python virtual environment...
 if exist "%PROJECT_ROOT%\backend\.venv" (
-    echo [OK] Python虚拟环境已存在
+    echo [OK] Python virtual environment exists
 ) else (
-    echo [提示] Python虚拟环境不存在，正在创建...
+    echo [INFO] Python virtual environment does not exist, creating...
     py -3.14 -m venv "%PROJECT_ROOT%\backend\.venv"
     if errorlevel 1 (
-        echo [错误] Python虚拟环境创建失败
+        echo [ERROR] Python virtual environment creation failed
         echo.
         pause
         exit /b 1
     )
-    echo [OK] Python虚拟环境创建成功
+    echo [OK] Python virtual environment created successfully
 )
 
-REM 安装Python依赖
+REM Install Python dependencies
 echo.
-echo [4/5] 安装Python依赖...
+echo [4/5] Installing Python dependencies...
 set "PYTHON_EXE=%PROJECT_ROOT%\backend\.venv\Scripts\python.exe"
 
 if exist "%PYTHON_EXE%" (
-    echo [OK] Python版本: 
+    echo [OK] Python version:
     "%PYTHON_EXE%" --version
     
-    REM 检查是否已安装依赖
+    REM Check if dependencies are installed
     if exist "%PROJECT_ROOT%\backend\.venv\Lib\site-packages\fastapi" (
-        echo [OK] Python依赖已安装
+        echo [OK] Python dependencies are installed
     ) else (
-        echo [提示] 正在安装Python依赖...
+        echo [INFO] Installing Python dependencies...
         "%PYTHON_EXE%" -m pip install -r "%PROJECT_ROOT%\backend\requirements.txt"
         if errorlevel 1 (
-            echo [错误] Python依赖安装失败
+            echo [ERROR] Python dependencies installation failed
             echo.
             pause
             exit /b 1
         )
-        echo [OK] Python依赖安装成功
+        echo [OK] Python dependencies installed successfully
     )
     
-    REM 安装本地包
-    echo [提示] 安装quant_trading包...
+    REM Install local package
+    echo [INFO] Installing quant_trading package...
     "%PYTHON_EXE%" -m pip install --no-deps -e "%PROJECT_ROOT%\backend"
     if errorlevel 1 (
-        echo [错误] quant_trading包安装失败
+        echo [ERROR] quant_trading package installation failed
         echo.
         pause
         exit /b 1
     )
-    echo [OK] quant_trading包安装成功
+    echo [OK] quant_trading package installed successfully
 ) else (
-    echo [错误] Python虚拟环境未找到
+    echo [ERROR] Python virtual environment not found
     echo.
     pause
     exit /b 1
 )
 
-REM 启动API服务
+REM Start API service
 echo.
-echo [5/5] 启动服务...
-echo 正在启动API服务 (端口8000)...
+echo [5/5] Starting services...
+echo Starting API service (port 8000)...
 
-REM 创建日志目录
+REM Create logs directory
 if not exist "%PROJECT_ROOT%\logs" mkdir "%PROJECT_ROOT%\logs"
 
-REM 启动API服务（后台运行）
-start "API服务" /MIN cmd /k ""%PYTHON_EXE%" "%PROJECT_ROOT%\backend\quant_trading\main_uvicorn.py""
+REM Start API service (background)
+start "API Service" /MIN cmd /k ""%PYTHON_EXE%" "%PROJECT_ROOT%\backend\quant_trading\main_uvicorn.py""
 
-REM 等待3秒检查服务是否启动
+REM Wait 3 seconds to check if service started
 timeout /t 3 /nobreak >nul
 
 echo.
 echo =========================================
-echo   服务启动完成！
+echo   Service started successfully!
 echo =========================================
 echo.
-echo API服务: http://localhost:8000
-echo API文档: http://localhost:8000/docs
+echo API Service: http://localhost:8000
+echo API Docs:    http://localhost:8000/docs
 echo.
-echo 日志文件:
-echo   - API日志: "%PROJECT_ROOT%\logs\api.log"
-echo   - API错误: "%PROJECT_ROOT%\logs\api_error.log"
+echo Log files:
+echo   - API log:    "%PROJECT_ROOT%\logs\api.log"
+echo   - API error:  "%PROJECT_ROOT%\logs\api_error.log"
 echo.
 echo.
 echo =========================================
-echo   重要提示
+echo   Important Notes
 echo =========================================
 echo.
-echo 1. API服务正在后台运行（最小化窗口）
-echo 2. 要查看API日志，请检查 logs\api.log 文件
-echo 3. 要停止API服务，请关闭API服务窗口
-echo 4. 要停止所有服务，请运行 stop.bat
+echo 1. API service is running in background (minimized window)
+echo 2. To view API logs, check logs\api.log file
+echo 3. To stop API service, close the API service window
+echo 4. To stop all services, run: stop.bat
 echo.
 echo =========================================
 echo.
 
-REM 保持窗口打开
+REM Keep window open
 pause
