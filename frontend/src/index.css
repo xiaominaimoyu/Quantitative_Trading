@@ -1,0 +1,165 @@
+/* ===== AI 量化研究平台 · 全局样式基调 ===== */
+/* 研究控制台风格：克制、紧凑、信息密度高。 */
+
+:root {
+  /* 行情语义色（红涨绿跌），由 ThemeContext 按主题覆写 */
+  --market-up: #cf1322;
+  --market-down: #237804;
+
+  --font-system:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', Menlo,
+    monospace;
+
+  /* 布局常量（桌面优先基准 1440px） */
+  --sider-width: 224px;
+  --header-height: 56px;
+  --content-max-width: 1440px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-system);
+  font-size: 14px;
+  line-height: 1.5714;
+  color: rgba(0, 0, 0, 0.88);
+  background: #f5f5f5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 等宽字体：ID / 哈希 / 时间戳 */
+.mono,
+.qt-mono {
+  font-family: var(--font-mono);
+}
+
+/* 金融数字：等宽数字，避免跳动 */
+.tabular-nums,
+.qt-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 页面内容容器：桌面优先 1440，居中，紧凑内边距 */
+.qt-page-content {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 16px 24px 48px;
+}
+
+/* 侧栏「未启用」入口：灰显 */
+.qt-menu-soon {
+  color: rgba(0, 0, 0, 0.45);
+}
+.qt-menu-soon-tag {
+  margin-left: 6px;
+  color: rgba(0, 0, 0, 0.45);
+  border-color: rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  background: transparent;
+}
+
+/* 顶栏元素间距 */
+.qt-header-item {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 16px;
+}
+
+/* 行情数字基础样式（MarketValue 组件使用） */
+.qt-market-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  white-space: nowrap;
+}
+.qt-market-value--bg {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 4px;
+  line-height: 24px;
+}
+
+/* 状态标签（StatusTag）：浅色底 + 深色文字 + 图标 */
+.qt-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.qt-status-tag .anticon {
+  font-size: 12px;
+}
+
+/* 骨架屏容器留白 */
+.qt-skeleton-block {
+  padding: 16px 0;
+}
+
+/* 表格容器允许横向滚动 */
+.qt-table-scroll {
+  overflow-x: auto;
+}
+
+/* 长文本截断 */
+.qt-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 滚动条（研究控制台风格，纤细） */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 跳转到主内容链接（WCAG 2.4.1）：默认视觉隐藏，聚焦时显现 */
+.qt-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: #fff;
+  color: #2f54eb;
+  border: 1px solid #2f54eb;
+  border-radius: 4px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.qt-skip-link:focus {
+  left: 8px;
+  outline: 2px solid #2f54eb;
+  outline-offset: 2px;
+}
