@@ -4,12 +4,12 @@
 
 | Requirement | Design | Implementation | Test |
 |-------------|--------|----------------|------|
-| B0/B1 API | SDLC_02 | Backend API | frontend/tests |
-| B2 Data Snapshot | SDLC_02 | B2 Implementation | b2-datasets.test.mjs |
-| B3 Strategy/Model/Risk | SDLC_02 | B3 Implementation | b3-research-domains.test.mjs |
-| B4 Experiment/Backtest | SDLC_02 | B4 Implementation | b4-experiment-compare.test.mjs |
-| B5 Validation/Report | SDLC_02 | B5 Implementation | TBD |
-| B6 Production | SDLC_02 | B6 Implementation | TBD |
+| B0/B1 API | SDLC_02 | Backend API | frontend/tests/api-contract.test.mjs |
+| B2 Data Snapshot | SDLC_02 | B2 Implementation | frontend/tests/b2-datasets.test.mjs |
+| B3 Strategy/Model/Risk | SDLC_02 | B3 Implementation | frontend/tests/b3-research-domains.test.mjs |
+| B4 Experiment/Backtest | SDLC_02 | B4 Implementation | frontend/tests/b4-experiment-compare.test.mjs |
+| B5 Validation/Report | SDLC_02 | B5 Implementation | frontend/tests/b5-validation-report-audit.test.mjs |
+| B6 Production | SDLC_02 | B6 Implementation | frontend/tests/b6-production-switchover.test.mjs |
 
 ## Stage Gates
 
@@ -31,4 +31,4 @@
 - B6: **Accepted**
 
 ### G3/G4 - Business Acceptance
-- Status: **Not Started**
+- Status: **In Progress** (spec.md created at .codeartsdoer/specs/g3g4_acceptance/spec.md)

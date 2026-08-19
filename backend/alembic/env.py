@@ -5,7 +5,14 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from quant_trading.core.database import Base
-from quant_trading.models import Strategy, StrategyVersion, Model, ModelVersion, RiskRule, RiskRuleVersion, Dataset, Experiment, Run
+from quant_trading.models import (
+    User,
+    AcceptanceReport,
+    ChecklistItem,
+    Issue,
+    Signature,
+    TestResult,
+)
 
 # this is the Alembic Config object
 config = context.config
