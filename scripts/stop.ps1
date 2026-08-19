@@ -1,15 +1,22 @@
 ﻿# 一键停止量化交易平台
 # 使用方法: .\stop.ps1
 
+# 获取脚本所在目录的父目录（项目根目录）
+$ScriptDir = Split-Path -Parent $PSScriptRoot
+$ProjectRoot = $ScriptDir
+
 Write-Host "========================================="
 Write-Host "  量化交易平台 - 一键停止脚本" -ForegroundColor Green
 Write-Host "========================================="
 Write-Host ""
+Write-Host "项目根目录: $ProjectRoot" -ForegroundColor Cyan
+Write-Host ""
 
 # 停止API服务
 Write-Host "[1/2] 停止API服务..." -ForegroundColor Yellow
-if (Test-Path "logs\api.pid") {
-    $apiPid = Get-Content "logs\api.pid"
+$apiPidPath = Join-Path $ProjectRoot "logs\api.pid"
+if (Test-Path $apiPidPath) {
+    $apiPid = Get-Content $apiPidPath
     $apiProcess = Get-Process -Id $apiPid -ErrorAction SilentlyContinue
     if ($apiProcess) {
         Stop-Process -Id $apiPid -Force -ErrorAction SilentlyContinue
@@ -17,7 +24,7 @@ if (Test-Path "logs\api.pid") {
     } else {
         Write-Host "⚠️ API服务未运行" -ForegroundColor Yellow
     }
-    Remove-Item "logs\api.pid" -Force -ErrorAction SilentlyContinue
+    Remove-Item $apiPidPath -Force -ErrorAction SilentlyContinue
 } else {
     Write-Host "⚠️ 未找到API进程ID文件" -ForegroundColor Yellow
 }
