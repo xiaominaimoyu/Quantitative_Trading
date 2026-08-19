@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers
 revision = 'e2aac586a3cd'
-down_revision = None
+down_revision = '0005_b5_validation_reports_risk'
 branch_labels = None
 depends_on = None
 
@@ -31,7 +31,7 @@ def upgrade() -> None:
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
-    """")
+    """)
 
     # Create acceptance_reports table
     op.execute("""
@@ -47,7 +47,7 @@ def upgrade() -> None:
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             created_by UUID REFERENCES users(id) NOT NULL
         );
-    """")
+    """)
 
     # Create index on acceptance_reports
     op.execute("CREATE INDEX idx_acceptance_reports_phase ON acceptance_reports(phase);")
