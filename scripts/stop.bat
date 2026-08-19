@@ -1,4 +1,7 @@
 @echo off
+REM 设置控制台使用UTF-8编码
+chcp 65001 >nul
+
 REM 一键停止量化交易平台
 REM 使用方法: stop.bat
 
