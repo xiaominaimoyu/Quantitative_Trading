@@ -72,7 +72,8 @@ echo [4/5] 安装Python依赖...
 set "PYTHON_EXE=%PROJECT_ROOT%\backend\.venv\Scripts\python.exe"
 
 if exist "%PYTHON_EXE%" (
-    for /f "%%i in ('%PYTHON_EXE% --version 2^>^&1') do set "PYTHON_VERSION=%%i"
+    REM 获取Python版本（简化方式）
+    for /f "tokens=1,2" %%i in ('%PYTHON_EXE% --version') do set "PYTHON_VERSION=%%i %%j"
     echo ✅ Python版本: %PYTHON_VERSION%
     
     REM 检查是否已安装依赖
@@ -123,7 +124,7 @@ timeout /t 3 /nobreak >nul
 
 echo.
 echo =========================================
-echo   🚀 服务启动完成！
+echo   服务启动完成！
 echo =========================================
 echo.
 echo API服务: http://localhost:8000
@@ -139,10 +140,10 @@ echo   重要提示
 echo =========================================
 echo.
 echo 1. API服务正在后台运行（最小化窗口）
- echo 2. 要查看API日志，请检查 logs\api.log 文件
- echo 3. 要停止API服务，请关闭API服务窗口
- echo 4. 要停止所有服务，请运行 stop.bat
-necho.
+echo 2. 要查看API日志，请检查 logs\api.log 文件
+echo 3. 要停止API服务，请关闭API服务窗口
+echo 4. 要停止所有服务，请运行 stop.bat
+echo.
 echo =========================================
 echo.
 
