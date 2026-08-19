@@ -258,6 +258,25 @@ Pop-Location
 .\backend\.venv\Scripts\python.exe -m pip install --no-deps -e backend
 ```
 
+## 一键启动（推荐）
+
+项目提供了批处理脚本实现一键启动和停止：
+
+```batch
+# 启动所有服务
+scripts\start.bat
+
+# 停止所有服务
+scripts\stop.bat
+```
+
+启动脚本会自动执行以下步骤：
+1. 检查Docker状态
+2. 启动PostgreSQL数据库
+3. 创建Python虚拟环境（如不存在）
+4. 安装Python依赖
+5. 启动API服务
+
 ## 文档入口
 
 - [需求与项目规划](docs/SDLC_01_Requirements_Analysis_and_Planning.md)
