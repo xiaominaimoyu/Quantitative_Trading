@@ -4,6 +4,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+from quant_trading.config import settings
 from quant_trading.core.database import Base
 from quant_trading.models import (
     User,
@@ -12,6 +13,27 @@ from quant_trading.models import (
     Issue,
     Signature,
     TestResult,
+)
+from quant_trading.models.recovery import (  # noqa: F401 - register metadata
+    Artifact,
+    AuditEvent,
+    DataQualityRun,
+    DataSource,
+    Dataset,
+    DatasetVersion,
+    Experiment,
+    IdempotencyRecord,
+    PaperAccount,
+    PaperFill,
+    PaperOrder,
+    ReconciliationRun,
+    Report,
+    ResearchContainer,
+    ResearchVersion,
+    RiskEvent,
+    SafetyState,
+    Task,
+    ValidationRun,
 )
 
 # this is the Alembic Config object
@@ -28,7 +50,7 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=settings.DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -40,8 +62,8 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = "postgresql+psycopg://quant:quant_dev_password@127.0.0.1:5432/quant_trading"
+    configuration = config.get_section(config.config_ini_section) or {}
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL
     
     connectable = engine_from_config(
         configuration,

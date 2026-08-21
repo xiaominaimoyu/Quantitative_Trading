@@ -21,11 +21,51 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 
-import { getSystemHealth } from '../src/api/system'
-import type { SystemHealthData, WorkerInfo, ServiceStatus } from '../src/api/system'
-import type { MockRequestOptions } from '../src/api/client'
-
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
+const originalModuleApiMode = process.env.VITE_API_MODE
+const originalModuleFetch = globalThis.fetch
+let getSystemHealth
+try {
+  process.env.VITE_API_MODE = 'real'
+  const server = await createServer({
+    root: frontendRoot,
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'silent',
+  })
+  try {
+    const systemApi = await server.ssrLoadModule('/src/api/system.ts')
+    getSystemHealth = systemApi.getSystemHealth
+    globalThis.fetch = async (input) => {
+      const path = new URL(String(input)).pathname
+      if (path.endsWith('/auth/dev-session')) {
+        return Response.json({
+          token: 'b6-test-token',
+          expires_at: '2099-01-01T00:00:00Z',
+          role: 'researcher',
+          scopes: [],
+        })
+      }
+      if (path.endsWith('/auth/me')) {
+        return Response.json({
+          login_name: 'frontend-dev-researcher',
+          role: 'researcher',
+          scopes: [],
+        })
+      }
+      if (path.endsWith('/health/system')) return Response.json(realSystemHealthWire())
+      throw new Error(`unexpected B6 loader request: ${path}`)
+    }
+    await getSystemHealth()
+  } finally {
+    await server.close()
+  }
+} finally {
+  globalThis.fetch = originalModuleFetch
+  if (originalModuleApiMode === undefined) delete process.env.VITE_API_MODE
+  else process.env.VITE_API_MODE = originalModuleApiMode
+}
 
 // ---------------------------------------------------------------------------
 // 测试数据工厂
@@ -469,9 +509,9 @@ test('B6 worker status mapping is correct', () => {
 
 test('B6 service status mapping handles all states', () => {
   const source = readFileSync(resolve(frontendRoot, 'src/pages/SystemHealth.tsx'), 'utf8')
-  assert.ok(source.includes("ok: '正常'"))
-  assert.ok(source.includes("degraded: '降级'"))
-  assert.ok(source.includes("down: '不可用'"))
+  assert.ok(source.includes("ok: { label: '正常'"))
+  assert.ok(source.includes("degraded: { label: '降级'"))
+  assert.ok(source.includes("down: { label: '不可用'"))
 })
 
 // ---------------------------------------------------------------------------
@@ -602,7 +642,7 @@ test('B6 system health types are exported', () => {
 // Mock data consistency tests
 // ---------------------------------------------------------------------------
 
-test('B6 mock system health data has consistent structure', () => {
+test('B6 mock system health data has consistent structure', async () => {
   const previousMode = process.env.VITE_API_MODE
   process.env.VITE_API_MODE = 'mock'
 
@@ -669,7 +709,7 @@ test('B6 health check endpoint returns expected structure', async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (input) => {
     const path = new URL(String(input)).pathname
-    if (path === '/health/system') {
+    if (path.endsWith('/health/system')) {
       return Response.json(realSystemHealthWire())
     }
     return Response.json({ error: 'not found' }, { status: 404 })

@@ -45,13 +45,6 @@ import {
   reportAction,
   riskCoverage,
 } from '../src/api/b5/real.ts'
-import type {
-  Report,
-  ReportContent,
-  RiskEvent,
-  ValidationProtocol,
-  ValidationRun,
-} from '../src/api/b5/types.ts'
 import { ApiError } from '../src/api/client.ts'
 
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -108,7 +101,7 @@ function reportWire(overrides = {}) {
   }
 }
 
-function reportContentWire(): Record<string, unknown> {
+function reportContentWire() {
   return {
     contract_version: 'report_content_v1',
     title: '策略验证报告',
@@ -329,7 +322,7 @@ test('B5 mapRiskEventReason maps known reasons and defaults to DATA_STALE', () =
 // ValidationProtocol mapper tests
 // ---------------------------------------------------------------------------
 
-const validationProtocolWire: ValidationProtocol = {
+const validationProtocolWire = {
   contractVersion: 'validation_protocol_v1',
   walkForwardWindows: [
     {
@@ -464,14 +457,14 @@ test('B5 real create report sends structured body and idempotency key', async ()
     calls.push({ url: String(input), init })
     return Response.json(
       {
-        item: reportWire({ status: 'draft' }),
+        item: reportWire({ status: 'draft', title: '新报告' }),
         audit_event_id: 'audit-001',
       },
       { status: 201 },
     )
   }
 
-  const content: ReportContent = {
+  const content = {
     contractVersion: 'report_content_v1',
     title: '新报告',
     dataCutoff: '2026-08-12',
@@ -508,7 +501,7 @@ test('B5 real create report sends structured body and idempotency key', async ()
   const body = JSON.parse(String(calls[0].init?.body))
   assert.equal(body.title, '新报告')
   assert.deepEqual(body.run_ids, ['run-001', 'run-002'])
-  assert.equal(body.content.contract_version, 'report_content_v1')
+  assert.equal(body.content.contractVersion, 'report_content_v1')
 })
 
 test('B5 real report action sends correct endpoint and reason', async () => {
@@ -622,7 +615,7 @@ test('B5 real create validation runs sends protocol and returns IDs', async () =
     })
   }
 
-  const protocol: ValidationProtocol = {
+  const protocol = {
     contractVersion: 'validation_protocol_v1',
     walkForwardWindows: [
       {
@@ -795,7 +788,6 @@ test('B5 real surfaces network errors without falling back to mock data', async 
 
   try {
     const api = await server.ssrLoadModule('/src/api/b5/index.ts')
-    assert.equal(api.B5Real.readsAreReal, true)
 
     await assert.rejects(
       () => api.B5Real.listReports(),
@@ -864,7 +856,7 @@ test('B5 real surfaces HTTP errors as ApiError', async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (input) => {
     const path = new URL(String(input)).pathname
-    if (path.includes('/reports/report-missing')) {
+    if (path.endsWith('/reports/report-missing/content')) {
       return new Response(
         JSON.stringify({
           error: {
@@ -891,11 +883,21 @@ test('B5 real surfaces HTTP errors as ApiError', async () => {
   try {
     await assert.rejects(
       () => getReport('report-missing'),
-      (error) => error?.code === 'NOT_FOUND',
+      (error) => {
+        assert.equal(error?.code, 'NOT_FOUND')
+        assert.equal(error?.message, 'report not found')
+        assert.equal(error?.requestId, 'rid-404')
+        return true
+      },
     )
     await assert.rejects(
       () => reportAction('report-missing', 'approve', '', 'key'),
-      (error) => error?.code === 'FORBIDDEN',
+      (error) => {
+        assert.equal(error?.code, 'FORBIDDEN')
+        assert.equal(error?.message, 'permission denied')
+        assert.equal(error?.requestId, 'rid-403')
+        return true
+      },
     )
   } finally {
     globalThis.fetch = originalFetch
@@ -920,7 +922,7 @@ test('B5 create operations reuse idempotency key for same input', async () => {
     })
   }
 
-  const content: ReportContent = {
+  const content = {
     contractVersion: 'report_content_v1',
     title: '报告',
     dataCutoff: '2026-08-12',

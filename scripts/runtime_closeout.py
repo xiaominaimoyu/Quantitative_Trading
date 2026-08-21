@@ -1,4 +1,4 @@
-"""Exercise the dev closeout path against the dedicated PostgreSQL test DB."""
+"""Exercise the reconstructed closeout path against a dedicated PostgreSQL test DB."""
 from __future__ import annotations
 
 import hashlib
@@ -13,7 +13,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND, FRONTEND = ROOT / "backend", ROOT / "frontend"
@@ -92,7 +92,7 @@ def insert_b1_migration_probe(database_url):
     from sqlalchemy import create_engine, text
 
     dataset_id, version_id = uuid4(), uuid4()
-    content_sha256 = "a" * 64
+    logical_content_sha256 = "a" * 64
     engine = create_engine(database_url)
     try:
         with engine.begin() as connection:
@@ -108,14 +108,14 @@ def insert_b1_migration_probe(database_url):
             connection.execute(
                 text(
                     "INSERT INTO dataset_versions "
-                    "(id, dataset_id, version_no, status, quality_status, row_count, content_sha256) "
+                    "(id, dataset_id, version_no, status, quality_status, row_count, logical_content_sha256) "
                     "VALUES (:id, :dataset_id, 1, 'draft', 'pending', 0, :sha256)"
                 ),
-                {"id": version_id, "dataset_id": dataset_id, "sha256": content_sha256},
+                {"id": version_id, "dataset_id": dataset_id, "sha256": logical_content_sha256},
             )
     finally:
         engine.dispose()
-    return dataset_id, version_id, content_sha256
+    return dataset_id, version_id, logical_content_sha256
 
 
 def verify_b1_migration_probe(database_url, probe):
@@ -133,7 +133,7 @@ def verify_b1_migration_probe(database_url, probe):
                 {"id": version_id},
             ).one()
         if str(row.dataset_id) != str(dataset_id) or row.logical_content_sha256 != expected_sha256:
-            raise RuntimeError("0001 -> head did not preserve the migration probe")
+            raise RuntimeError("reconstructed baseline -> head did not preserve the migration probe")
     finally:
         engine.dispose()
 
@@ -208,6 +208,22 @@ def request_json(method, path, token=None, body=None, expected=200, extra_header
         return payload, response.headers
 
 
+def request_bytes(method, path, token=None, expected=200):
+    headers = {"Accept": "application/octet-stream", "X-Request-Id": f"SMOKE-{uuid4().hex}"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(f"{API_ROOT}{path}", headers=headers, method=method)
+    try:
+        response = urllib.request.urlopen(request, timeout=8)
+    except urllib.error.HTTPError as error:
+        response = error
+    with response:
+        content = response.read()
+        if response.status != expected:
+            raise RuntimeError(f"{method} {path} returned HTTP {response.status}")
+        return content, response.headers
+
+
 def wait_task(task_id, token, expected_status, timeout=45):
     deadline = time.monotonic() + timeout
     current = {}
@@ -219,7 +235,7 @@ def wait_task(task_id, token, expected_status, timeout=45):
                 raise
             time.sleep(0.1)
             continue
-        if current.get("status") in {"success", "failed", "cancelled"}:
+        if current.get("status") in {"success", "failed", "canceled"}:
             break
         time.sleep(0.25)
     if current.get("status") != expected_status:
@@ -326,16 +342,16 @@ def main():
                 BACKEND, backend_env, "reset ephemeral migration probe database",
             )
             run_checked(
-                [str(python), "-m", "alembic", "upgrade", "0001"],
-                BACKEND, backend_env, "PostgreSQL -> 0001 migration",
+                [str(python), "-m", "alembic", "upgrade", "0005_b5_validation_reports_risk"],
+                BACKEND, backend_env, "PostgreSQL -> reconstructed baseline migration",
             )
             migration_probe = insert_b1_migration_probe(runtime_database_url)
             run_checked(
                 [str(python), "-m", "alembic", "upgrade", "head"],
-                BACKEND, backend_env, "PostgreSQL 0001 -> head migration",
+                BACKEND, backend_env, "PostgreSQL reconstructed baseline -> head migration",
             )
             verify_b1_migration_probe(runtime_database_url, migration_probe)
-            print("PASS 0001 -> head preserves B1 data and content hash")
+            print("PASS reconstructed baseline -> head preserves B1 logical content hash")
             run_checked([str(python), "-m", "quant_trading.seed"], BACKEND, backend_env, "seed")
 
             api, log = start(
@@ -365,8 +381,8 @@ def main():
             )
             dataset_id = dataset["id"]
             versions, _ = request_json("GET", f"/datasets/{dataset_id}/versions", token)
-            if not versions["items"]:
-                raise RuntimeError("created dataset has no version")
+            if versions["items"]:
+                raise RuntimeError("created dataset unexpectedly has an initial version")
 
             sources, _ = request_json("GET", "/data-sources?page_size=100", token)
             fixture_sources = {
@@ -462,6 +478,27 @@ def main():
                 "dataset_partition", "dataset_manifest", "data_quality_report"
             } or any("uri" in item for item in clean_artifacts):
                 raise RuntimeError("snapshot artifact metadata is incomplete or leaks a URI")
+            partition_artifact = next(
+                item for item in clean_artifacts if item["artifact_type"] == "dataset_partition"
+            )
+            partition_artifact_id = partition_artifact["id"]
+            try:
+                UUID(partition_artifact_id)
+            except (TypeError, ValueError) as error:
+                raise RuntimeError("partition artifact id is not a UUID") from error
+            partition_download, partition_headers = request_bytes(
+                "GET", f"/artifacts/{partition_artifact_id}/download", token
+            )
+            if not (
+                partition_artifact.get("format") == "parquet"
+                and partition_download[:4] == b"PAR1"
+                and partition_download[-4:] == b"PAR1"
+                and len(partition_download) == partition_artifact["size_bytes"]
+                and hashlib.sha256(partition_download).hexdigest() == partition_artifact["sha256"]
+                and partition_headers.get_content_type() == "application/vnd.apache.parquet"
+                and partition_artifact_id in partition_headers.get("Content-Disposition", "")
+            ):
+                raise RuntimeError("downloaded Parquet artifact failed identity or byte verification")
 
             query, _ = request_json(
                 "POST", f"/dataset-versions/{clean_version_id}/query", token,

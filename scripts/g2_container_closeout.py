@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -349,6 +349,9 @@ headers = {"Accept": "application/json", "Content-Type": "application/json"}
 token = os.environ.get("G2_TOKEN")
 if token:
     headers["Authorization"] = "Bearer " + token
+idempotency_key = os.environ.get("G2_IDEMPOTENCY_KEY")
+if idempotency_key:
+    headers["Idempotency-Key"] = idempotency_key
 request = urllib.request.Request(
     "http://127.0.0.1:8000" + os.environ["G2_PATH"],
     data=body,
@@ -372,6 +375,7 @@ def api_request(
     *,
     body: dict[str, object] | None = None,
     token: str | None = None,
+    idempotency_key: str | None = None,
     expected: int = 200,
 ) -> object:
     raw_body = b"" if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
@@ -387,6 +391,8 @@ def api_request(
     ]
     if token:
         command.extend(["--env", f"G2_TOKEN={token}"])
+    if idempotency_key:
+        command.extend(["--env", f"G2_IDEMPOTENCY_KEY={idempotency_key}"])
     command.extend([container, "python", "-c", API_CLIENT])
     envelope = json.loads(run_checked(command, timeout=15))
     if envelope["status"] != expected:
@@ -413,6 +419,38 @@ def wait_api(container: str, timeout: float = 60) -> tuple[dict, dict]:
     raise CloseoutError(f"loopback API did not become ready: {last_error}")
 
 
+def validate_health_responses(live: dict, ready: dict) -> None:
+    """Validate the reconstructed runtime health contract without side effects."""
+    if live.get("status") != "ok":
+        raise CloseoutError(f"unexpected live health response: {live}")
+    if ready.get("status") != "ready":
+        raise CloseoutError(f"unexpected ready health response: {ready}")
+    if ready.get("database") != "reachable":
+        raise CloseoutError(f"unexpected ready database response: {ready}")
+
+
+def validate_system_health_response(system: object) -> str:
+    """Return the verified source migration revision from system health."""
+    if not isinstance(system, dict):
+        raise CloseoutError("system health response was not an object")
+    if system.get("status") != "ok":
+        raise CloseoutError("unexpected system health status")
+    if system.get("database") != "reachable":
+        raise CloseoutError("unexpected system health database status")
+    migration = system.get("migration")
+    if not isinstance(migration, dict):
+        raise CloseoutError("system health migration was not an object")
+    current = migration.get("current")
+    head = migration.get("head")
+    if not isinstance(current, str) or not current:
+        raise CloseoutError("system health migration current was not a non-empty string")
+    if not isinstance(head, str) or not head:
+        raise CloseoutError("system health migration head was not a non-empty string")
+    if current != head:
+        raise CloseoutError("system health migration current did not match head")
+    return current
+
+
 def wait_task(container: str, task_id: str, token: str, timeout: float = 60) -> dict:
     deadline = time.monotonic() + timeout
     current: object = {}
@@ -436,12 +474,53 @@ def parse_json_output(output: str, label: str) -> dict:
     return value
 
 
-def verify_restore(
+def canonical_uuid(value: object, label: str) -> str:
+    """Return a UUID in canonical form before it is used in a SQL literal."""
+    if not isinstance(value, str):
+        raise CloseoutError(f"{label} was not a UUID string")
+    try:
+        return str(UUID(value))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise CloseoutError(f"{label} was not a valid UUID") from exc
+
+
+def validate_dataset_probe_response(
+    response: object, expected_name: str, expected_slug: str
+) -> str:
+    """Fail closed unless the API created precisely the token-scoped probe."""
+    if not isinstance(response, dict):
+        raise CloseoutError("dataset probe response was not an object")
+    if "id" not in response or "name" not in response or "slug" not in response:
+        raise CloseoutError("dataset probe response was missing id, name, or slug")
+    probe_dataset_id = canonical_uuid(response["id"], "dataset probe id")
+    if response["name"] != expected_name:
+        raise CloseoutError("dataset probe response name did not match")
+    if response["slug"] != expected_slug:
+        raise CloseoutError("dataset probe response slug did not match")
+    return probe_dataset_id
+
+
+def validate_database_snapshot(
+    snapshot: object, expected: dict[str, object], label: str
+) -> None:
+    """Require source and restored database facts to match one shared oracle."""
+    if not isinstance(snapshot, dict):
+        raise CloseoutError(f"{label} database snapshot was not an object")
+    for field, expected_value in expected.items():
+        if snapshot.get(field) != expected_value:
+            raise CloseoutError(f"{label} database snapshot {field} did not match expected")
+
+
+def database_snapshot(
     container: str,
     names: ResourceNames,
     task_id: str,
     artifact_id: str,
+    probe_dataset_id: str,
 ) -> dict:
+    task_id = canonical_uuid(task_id, "diagnostic task id")
+    artifact_id = canonical_uuid(artifact_id, "diagnostic artifact id")
+    probe_dataset_id = canonical_uuid(probe_dataset_id, "dataset probe id")
     sql = f"""
 SELECT json_build_object(
   'alembic_version', (SELECT version_num FROM alembic_version LIMIT 1),
@@ -449,7 +528,9 @@ SELECT json_build_object(
   'task_payload', (SELECT payload::json FROM tasks WHERE id = '{task_id}'),
   'artifact_count', (SELECT count(*) FROM artifacts WHERE generated_by_task_id = '{task_id}'),
   'artifact_sha256', (SELECT sha256 FROM artifacts WHERE id = '{artifact_id}'),
-  'utf8_seed_count', (SELECT count(*) FROM datasets WHERE name = 'A 股日频行情')
+  'utf8_probe_id', (SELECT id::text FROM datasets WHERE id = '{probe_dataset_id}'),
+  'utf8_probe_count', (SELECT count(*) FROM datasets WHERE id = '{probe_dataset_id}'),
+  'utf8_probe_name', (SELECT name FROM datasets WHERE id = '{probe_dataset_id}')
 )::text;
 """.strip()
     output = run_checked(
@@ -473,7 +554,7 @@ SELECT json_build_object(
         ],
         timeout=30,
     )
-    return parse_json_output(output, "PostgreSQL restore verification")
+    return parse_json_output(output, "PostgreSQL database snapshot")
 
 
 def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, object]:
@@ -550,14 +631,16 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
         )
     )
     live, ready = wait_api(names.api)
-    if live.get("status") != "ok" or ready.get("status") != "ok":
-        raise CloseoutError(f"unexpected health response: live={live}, ready={ready}")
+    validate_health_responses(live, ready)
+    system = api_request(names.api, "GET", "/api/v1/health/system")
+    migration_current = validate_system_health_response(system)
     checks["loopback_health"] = {
         "status": "PASS",
         "bind_host": "127.0.0.1",
         "published_ports": [],
         "live": live,
         "ready": ready,
+        "system": system,
     }
 
     session = api_request(
@@ -569,14 +652,41 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
     if not isinstance(session, dict) or not isinstance(session.get("token"), str):
         raise CloseoutError("dev-session did not return a token")
     token = session["token"]
+    probe_slug = f"g2-utf8-probe-{names.token}"
+    probe_name = f"G2 UTF-8 恢复探针 {names.token}"
+    probe = api_request(
+        names.api,
+        "POST",
+        "/api/v1/datasets",
+        body={
+            "name": probe_name,
+            "slug": probe_slug,
+            "market": "local",
+            "frequency": "daily",
+            "license": "local-reconstructed",
+            "schema_version": "market_bar_v1",
+        },
+        token=token,
+        idempotency_key=f"g2-utf8-probe-{names.token}",
+        expected=201,
+    )
+    probe_dataset_id = validate_dataset_probe_response(probe, probe_name, probe_slug)
+    checks["utf8_dataset_probe"] = {
+        "status": "PASS",
+        "dataset_id": probe_dataset_id,
+        "name": probe_name,
+        "slug": probe_slug,
+    }
+
     marker = "G2 容器恢复 UTF-8"
+    expected_payload = {"message": marker, "timezone": "Asia/Shanghai"}
     task = api_request(
         names.api,
         "POST",
         "/api/v1/tasks",
         body={
             "task_type": "diagnostic",
-            "payload": {"message": marker, "timezone": "Asia/Shanghai"},
+            "payload": expected_payload,
             "priority": 10,
         },
         token=token,
@@ -584,7 +694,7 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
     )
     if not isinstance(task, dict) or not isinstance(task.get("id"), str):
         raise CloseoutError("task creation did not return an id")
-    task_id = task["id"]
+    task_id = canonical_uuid(task["id"], "diagnostic task id")
 
     run_checked(
         app_run_command(
@@ -608,7 +718,7 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
     artifact = artifacts[0]
     if not isinstance(artifact, dict) or artifact.get("artifact_type") != "task_result":
         raise CloseoutError(f"diagnostic task artifact was invalid: {artifact}")
-    artifact_id = str(artifact["id"])
+    artifact_id = canonical_uuid(artifact.get("id"), "diagnostic artifact id")
     artifact_path = temp_root / "artifacts" / "tasks" / task_id / f"{artifact_id}.json"
     if not artifact_path.is_file():
         raise CloseoutError(f"diagnostic artifact file was not created: {artifact_path}")
@@ -647,6 +757,26 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
                 f"g2_platform_probe {field}={platform.get(field)!r}, expected {expected!r}"
             )
     checks["platform_probe"] = platform
+
+    expected_snapshot = {
+        "alembic_version": migration_current,
+        "task_status": "success",
+        "task_payload": expected_payload,
+        "artifact_count": 1,
+        "artifact_sha256": artifact_sha256,
+        "utf8_probe_id": probe_dataset_id,
+        "utf8_probe_count": 1,
+        "utf8_probe_name": probe_name,
+    }
+    source_snapshot = database_snapshot(
+        names.postgres_source,
+        names,
+        task_id,
+        artifact_id,
+        probe_dataset_id,
+    )
+    validate_database_snapshot(source_snapshot, expected_snapshot, "source")
+    checks["postgres_source_snapshot"] = {"status": "PASS", **source_snapshot}
 
     dump_name = f"{names.token}.dump"
     run_checked(
@@ -701,21 +831,14 @@ def execute(root: Path, names: ResourceNames, temp_root: Path) -> dict[str, obje
         ],
         timeout=120,
     )
-    restored = verify_restore(names.postgres_restore, names, task_id, artifact_id)
-    expected_payload = {"message": marker, "timezone": "Asia/Shanghai"}
-    expected_restore = {
-        "alembic_version": ready["migration"],
-        "task_status": "success",
-        "task_payload": expected_payload,
-        "artifact_count": 1,
-        "artifact_sha256": artifact_sha256,
-        "utf8_seed_count": 1,
-    }
-    for field, expected in expected_restore.items():
-        if restored.get(field) != expected:
-            raise CloseoutError(
-                f"restored {field}={restored.get(field)!r}, expected {expected!r}"
-            )
+    restored = database_snapshot(
+        names.postgres_restore,
+        names,
+        task_id,
+        artifact_id,
+        probe_dataset_id,
+    )
+    validate_database_snapshot(restored, expected_snapshot, "restored")
     checks["postgres_restore"] = {
         "status": "PASS",
         "dump_bytes": dump_path.stat().st_size,

@@ -46,7 +46,7 @@ function exportOpenApi() {
     env: {
       ...process.env,
       PYTHONDONTWRITEBYTECODE: '1',
-      PYTHONPATH: resolve(backendRoot, 'src'),
+      PYTHONPATH: backendRoot,
       QUANT_ENV: 'test',
       QUANT_DATABASE_URL: 'sqlite+pysqlite:///:memory:',
     },

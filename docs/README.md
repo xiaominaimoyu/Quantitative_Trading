@@ -1,33 +1,24 @@
 # Documentation
 
-This directory contains project documentation organized by category.
+此目录只索引当前工作区中实际存在的文档。历史实现证据、阶段通过结论和缺失的正文不会被重建为新的“原件”。
 
-## Structure
+## 恢复与保留证据
 
-### SDLC Documents
-- [SDLC_01_Requirements_Analysis_and_Planning.md](SDLC_01_Requirements_Analysis_and_Planning.md) - Requirements analysis and project planning
-- [SDLC_02_System_Design_Specification.md](SDLC_02_System_Design_Specification.md) - System design specification
-- [SDLC_03_Traceability_and_Gates.md](SDLC_03_Traceability_and_Gates.md) - Traceability matrix and stage gates
+- [RECOVERY_PROVENANCE.md](RECOVERY_PROVENANCE.md) — 保留内容、冻结契约、合理重建边界和当前验证事实。
+- [CONVERSATION_AND_CODE_EXPORT.md](CONVERSATION_AND_CODE_EXPORT.md) — 保留的对话与代码导出。
+- [memory_export/project_memory.md](memory_export/project_memory.md) — 保留的项目摘要。
+- [memory_export/topics.md](memory_export/topics.md) — 保留的主题摘要。
+- [memory_export/session_memory.jsonl](memory_export/session_memory.jsonl) — 保留的会话摘要数据。
 
-### Implementation Evidence
-- [B2_Implementation_Evidence.md](B2_Implementation_Evidence.md) - B2 data snapshot and quality implementation evidence
-- [B2_1_Baseline_Closeout.md](B2_1_Baseline_Closeout.md) - B2.1 baseline closeout execution package
-- [B3_Implementation_Evidence.md](B3_Implementation_Evidence.md) - B3 strategy/model/risk version implementation evidence
-- [B4_Implementation_Evidence.md](B4_Implementation_Evidence.md) - B4 experiment/backtest/task control implementation evidence
-- [B5_Implementation_Evidence.md](B5_Implementation_Evidence.md) - B5 validation/report/audit implementation evidence
-- [B6_Implementation_Evidence.md](B6_Implementation_Evidence.md) - B6 production switchover/CI/backup/SBOM implementation evidence
+## SDLC 文档
 
-### Decision Records
-- [adr/README.md](adr/README.md) - Architecture Decision Records index
-- [G1_Decision_Record.md](G1_Decision_Record.md) - G1 decision record
-- [G2_Stage_Gate_Acceptance.md](G2_Stage_Gate_Acceptance.md) - G2 stage gate acceptance
+- [SDLC_01_Requirements_Analysis_and_Planning.md](SDLC_01_Requirements_Analysis_and_Planning.md)
+- [SDLC_02_System_Design_Specification.md](SDLC_02_System_Design_Specification.md)
+- [SDLC_03_Traceability_and_Gates.md](SDLC_03_Traceability_and_Gates.md)
 
-### Execution Packages
-- [G1_G2_Execution_Package.md](G1_G2_Execution_Package.md) - G1/G2 execution package
-- [G2_Technical_PoC_Evidence.md](G2_Technical_PoC_Evidence.md) - G2 platform and security PoC evidence
-- [G2_B3_B6_Reestimate.md](G2_B3_B6_Reestimate.md) - B3-B6 re-estimation
+## Architecture Decision Records
 
-### Development Plans
-- [Backend_Development_Plan.md](Backend_Development_Plan.md) - Backend development plan
-- [Frontend_Design.md](Frontend_Design.md) - Frontend design specification
-- [B2_Data_Snapshot_and_Quality.md](B2_Data_Snapshot_and_Quality.md) - B2 data contract
+- [ADR index](adr/README.md)
+- [ADR-001 database choice](adr/ADR-001-database-choice.md)
+- [ADR-002 API framework](adr/ADR-002-api-framework.md)
+- [ADR-003 frontend framework](adr/ADR-003-frontend-framework.md)

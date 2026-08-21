@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "backend" / "src"))
+sys.path.insert(0, str(ROOT / "backend"))
 SPEC = importlib.util.spec_from_file_location(
     "b2_capacity_probe", ROOT / "scripts" / "b2_capacity_probe.py"
 )

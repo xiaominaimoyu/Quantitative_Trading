@@ -27,6 +27,7 @@ import {
   getReconciliationDetail as realGetReconciliationDetail,
   listPaperOrders as realListPaperOrders,
   listReconciliations as realListReconciliations,
+  mapPaperOrderStatus,
   manualStopPaperTrading as realManualStop,
 } from '../src/api/paperTrading.ts'
 
@@ -183,6 +184,50 @@ test('real getPaperTradingSnapshot maps snake_case → camelCase and translates 
   }
 })
 
+test('real facade converts fixed-point strings and preserves nullable market-order fields', async () => {
+  const originalFetch = globalThis.fetch
+  const response = snapshotResponse()
+  response.account.total = '10000000.50'
+  response.account.available = '6280000.25'
+  response.account.market_value = '3720000.25'
+  response.account.day_pnl = '18600.10'
+  response.account.day_pnl_pct = '0.19'
+  response.positions[0].quantity = '1200.00'
+  response.positions[0].market_value = '2025840.00'
+  response.positions[0].pnl = '32400.00'
+  response.positions[0].pnl_pct = '1.62'
+  response.orders[0].quantity = '1200.00'
+  response.orders[0].filled_quantity = '1200.00'
+  response.orders[0].price = null
+  response.orders[0].submitted_at = null
+  globalThis.fetch = async () => new Response(JSON.stringify(response), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+  try {
+    const snapshot = await realGetSnapshot()
+    assert.equal(snapshot.account.total, 10_000_000.5)
+    assert.equal(snapshot.positions[0].quantity, 1200)
+    assert.equal(snapshot.orders[0].price, null)
+    assert.equal(snapshot.orders[0].submittedAt, null)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('real facade compresses complete backend G5 order states without changing UI status types', () => {
+  assert.equal(mapPaperOrderStatus('planned'), 'accepted')
+  assert.equal(mapPaperOrderStatus('submitting'), 'accepted')
+  assert.equal(mapPaperOrderStatus('submitted'), 'accepted')
+  assert.equal(mapPaperOrderStatus('cancel_pending'), 'accepted')
+  assert.equal(mapPaperOrderStatus('partially_filled'), 'partial')
+  assert.equal(mapPaperOrderStatus('filled'), 'filled')
+  assert.equal(mapPaperOrderStatus('unknown'), 'unknown')
+  assert.equal(mapPaperOrderStatus('blocked'), 'rejected')
+  assert.equal(mapPaperOrderStatus('cancelled'), 'rejected')
+  assert.equal(mapPaperOrderStatus('rejected'), 'rejected')
+})
+
 // ---------------------------------------------------------------------------
 // 3. Real manualStopPaperTrading: POST /paper-trading/stop + Idempotency-Key
 // ---------------------------------------------------------------------------
@@ -303,7 +348,9 @@ test('real listReconciliations hits /paper-trading/reconciliations', async () =>
         items: [
           {
             id: 'REC-0001',
-            status: 'difference',
+            status: 'completed',
+            result_status: 'difference',
+            execution_status: 'completed',
             started_at: '2026-08-08T09:40:00+08:00',
             completed_at: '2026-08-08T09:42:00+08:00',
             checked_targets_count: 12,
@@ -348,7 +395,9 @@ test('real getReconciliationDetail maps run + discrepancy items', async () => {
       JSON.stringify({
         run: {
           id: 'REC-0001',
-          status: 'difference',
+          status: 'completed',
+          result_status: 'difference',
+          execution_status: 'completed',
           started_at: '2026-08-08T09:40:00+08:00',
           completed_at: '2026-08-08T09:42:00+08:00',
           checked_targets_count: 12,
@@ -590,6 +639,8 @@ test('PaperTradingReal.tsx uses real API facades and isolation warning', () => {
   assert.match(source, /与真实账户、券商、下单接口完全隔离/, 'must keep isolation Alert')
   // 人工停机 button present
   assert.match(source, /人工停机/, 'must keep manual stop button')
+  assert.match(source, /value === null \? '市价'/, 'must display nullable market order price as 市价')
+  assert.match(source, /: '—'/, 'must display nullable submitted time as —')
   // Expandable reconciliation detail
   assert.match(source, /expandedRowRender/, 'must render expanded discrepancy detail')
 })

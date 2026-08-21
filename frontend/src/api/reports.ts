@@ -48,7 +48,7 @@ export async function getReport(id: string): Promise<ReportDetail> {
       title: detail.title,
       contractVersion: 'report_content_v1',
       contentSha256: detail.contentHash,
-      status: 'submitted',
+      status: detail.status === 'pending_approval' ? 'submitted' : detail.status === 'archived' ? 'deprecated' : detail.status,
       submittedAt: null,
       approvedByKey: detail.approver ?? null,
       approvedAt: detail.approvedAt ?? null,

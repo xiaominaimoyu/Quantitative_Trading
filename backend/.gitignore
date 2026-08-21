@@ -3,3 +3,13 @@ alembic.ini
 requirements.lock
 requirements.txt
 .env.example
+
+# Recovered source/config allowlist
+!quant_trading/
+!quant_trading/**/
+!quant_trading/*.py
+!quant_trading/**/*.py
+!alembic.ini
+!requirements.lock
+!requirements.txt
+!.env.example

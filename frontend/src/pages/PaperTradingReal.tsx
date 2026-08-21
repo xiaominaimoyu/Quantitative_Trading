@@ -267,7 +267,7 @@ export default function PaperTradingRealPage() {
                 title: '价格',
                 dataIndex: 'price',
                 width: 100,
-                render: (value: number) => value.toFixed(2),
+                render: (value: number | null) => value === null ? '市价' : value.toFixed(2),
               },
               {
                 title: '状态',
@@ -283,7 +283,7 @@ export default function PaperTradingRealPage() {
                 title: '提交时间',
                 dataIndex: 'submittedAt',
                 width: 180,
-                render: (value: string) => formatDateTime(value, { zone: false }),
+                render: (value: string | null) => value ? formatDateTime(value, { zone: false }) : '—',
               },
             ]}
           />

@@ -23,6 +23,19 @@ import { mutationInit } from './research/http.ts'
 /** 与 mock 共享的订单状态词表。 */
 export type PaperOrderStatus = 'accepted' | 'partial' | 'filled' | 'unknown' | 'rejected'
 
+/** 后端 G5 完整订单状态机；仅在 real facade 内压缩为现有 UI 词表。 */
+type RawPaperOrderStatus =
+  | 'planned'
+  | 'blocked'
+  | 'submitting'
+  | 'submitted'
+  | 'unknown'
+  | 'partially_filled'
+  | 'filled'
+  | 'cancel_pending'
+  | 'cancelled'
+  | 'rejected'
+
 /** 订单方向：UI 仍以中文展示，real facade 负责将后端 'buy'/'sell' 翻译为 '买入'/'卖出'。 */
 export type PaperOrderDirection = '买入' | '卖出'
 
@@ -62,9 +75,9 @@ export interface PaperOrder {
   direction: PaperOrderDirection
   quantity: number
   filledQuantity: number
-  price: number
+  price: number | null
   status: PaperOrderStatus
-  submittedAt: string
+  submittedAt: string | null
 }
 
 /** 模拟盘整体快照：账户 + 持仓 + 最近订单（与 mock 字段对齐，但不含对账）。 */
@@ -138,32 +151,34 @@ export interface DailyReport {
 // 后端原始响应类型（snake_case）。仅供本模块内部使用。
 // ---------------------------------------------------------------------------
 
+type RawDecimal = string | number
+
 interface RawPaperTradingAccount {
-  total: number
-  available: number
-  market_value: number
-  day_pnl: number
-  day_pnl_pct: number
+  total: RawDecimal
+  available: RawDecimal
+  market_value: RawDecimal
+  day_pnl: RawDecimal
+  day_pnl_pct: RawDecimal
 }
 
 interface RawPaperPosition {
   symbol: string
   name: string
-  quantity: number
-  market_value: number
-  pnl: number
-  pnl_pct: number
+  quantity: RawDecimal
+  market_value: RawDecimal
+  pnl: RawDecimal
+  pnl_pct: RawDecimal
 }
 
 interface RawPaperOrder {
   id: string
   symbol: string
   direction: 'buy' | 'sell'
-  quantity: number
-  filled_quantity: number
-  price: number
-  status: PaperOrderStatus
-  submitted_at: string
+  quantity: RawDecimal
+  filled_quantity: RawDecimal
+  price: RawDecimal | null
+  status: RawPaperOrderStatus
+  submitted_at: string | null
 }
 
 interface RawReconciliationItem {
@@ -201,7 +216,9 @@ interface RawPaperOrdersPage {
 
 interface RawReconciliationRun {
   id: string
-  status: ReconciliationRunStatus
+  status: 'running' | 'completed' | 'failed' | ReconciliationRunStatus
+  result_status?: ReconciliationRunStatus
+  execution_status?: 'running' | 'completed' | 'failed'
   started_at: string
   completed_at: string | null
   checked_targets_count: number
@@ -221,10 +238,10 @@ interface RawReconciliationsPage {
 
 interface RawDailyReport {
   date: string
-  day_pnl: number
-  day_pnl_pct: number
-  turnover: number
-  total_fees: number
+  day_pnl: RawDecimal
+  day_pnl_pct: RawDecimal
+  turnover: RawDecimal
+  total_fees: RawDecimal
   filled_orders_count: number
   unknown_orders_count: number
   notes: string | null
@@ -238,13 +255,44 @@ function mapDirection(raw: 'buy' | 'sell'): PaperOrderDirection {
   return raw === 'buy' ? '买入' : '卖出'
 }
 
+/** Convert fixed-point API strings (and retained numeric fixtures) at one boundary. */
+function decimalToNumber(raw: RawDecimal): number {
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(value)) throw new Error('Paper-trading API returned an invalid decimal value')
+  return value
+}
+
+/**
+ * 不缩减后端十态；只把真实 API 响应映射到既有五态 UI 类型。
+ * 已完成、未知和拒绝保持语义，其余进行中的状态显示为 accepted/partial。
+ */
+export function mapPaperOrderStatus(raw: RawPaperOrderStatus): PaperOrderStatus {
+  switch (raw) {
+    case 'filled':
+      return 'filled'
+    case 'partially_filled':
+      return 'partial'
+    case 'unknown':
+      return 'unknown'
+    case 'blocked':
+    case 'cancelled':
+    case 'rejected':
+      return 'rejected'
+    case 'planned':
+    case 'submitting':
+    case 'submitted':
+    case 'cancel_pending':
+      return 'accepted'
+  }
+}
+
 function mapPaperTradingAccount(raw: RawPaperTradingAccount): PaperTradingAccount {
   return {
-    total: raw.total,
-    available: raw.available,
-    marketValue: raw.market_value,
-    dayPnl: raw.day_pnl,
-    dayPnlPct: raw.day_pnl_pct,
+    total: decimalToNumber(raw.total),
+    available: decimalToNumber(raw.available),
+    marketValue: decimalToNumber(raw.market_value),
+    dayPnl: decimalToNumber(raw.day_pnl),
+    dayPnlPct: decimalToNumber(raw.day_pnl_pct),
   }
 }
 
@@ -252,10 +300,10 @@ function mapPaperPosition(raw: RawPaperPosition): PaperPosition {
   return {
     symbol: raw.symbol,
     name: raw.name,
-    quantity: raw.quantity,
-    marketValue: raw.market_value,
-    pnl: raw.pnl,
-    pnlPct: raw.pnl_pct,
+    quantity: decimalToNumber(raw.quantity),
+    marketValue: decimalToNumber(raw.market_value),
+    pnl: decimalToNumber(raw.pnl),
+    pnlPct: decimalToNumber(raw.pnl_pct),
   }
 }
 
@@ -264,10 +312,10 @@ function mapPaperOrder(raw: RawPaperOrder): PaperOrder {
     id: raw.id,
     symbol: raw.symbol,
     direction: mapDirection(raw.direction),
-    quantity: raw.quantity,
-    filledQuantity: raw.filled_quantity,
-    price: raw.price,
-    status: raw.status,
+    quantity: decimalToNumber(raw.quantity),
+    filledQuantity: decimalToNumber(raw.filled_quantity),
+    price: raw.price === null ? null : decimalToNumber(raw.price),
+    status: mapPaperOrderStatus(raw.status),
     submittedAt: raw.submitted_at,
   }
 }
@@ -290,9 +338,16 @@ function mapPaperTradingSnapshot(raw: RawPaperTradingSnapshot): PaperTradingSnap
 }
 
 function mapReconciliationRun(raw: RawReconciliationRun): ReconciliationRun {
+  // Runtime responses distinguish execution state from reconciliation result.
+  // Old fixtures/export shapes used `status` for the result, so preserve that
+  // safe fallback without guessing an execution outcome.
+  const resultStatus = raw.result_status
+    ?? (raw.status === 'matched' || raw.status === 'difference' || raw.status === 'unknown'
+      ? raw.status
+      : 'unknown')
   return {
     id: raw.id,
-    status: raw.status,
+    status: resultStatus,
     startedAt: raw.started_at,
     completedAt: raw.completed_at,
     checkedTargetsCount: raw.checked_targets_count,
@@ -323,10 +378,10 @@ function mapReconciliationDetail(raw: RawReconciliationRunDetail): Reconciliatio
 function mapDailyReport(raw: RawDailyReport): DailyReport {
   return {
     date: raw.date,
-    dayPnl: raw.day_pnl,
-    dayPnlPct: raw.day_pnl_pct,
-    turnover: raw.turnover,
-    totalFees: raw.total_fees,
+    dayPnl: decimalToNumber(raw.day_pnl),
+    dayPnlPct: decimalToNumber(raw.day_pnl_pct),
+    turnover: decimalToNumber(raw.turnover),
+    totalFees: decimalToNumber(raw.total_fees),
     filledOrdersCount: raw.filled_orders_count,
     unknownOrdersCount: raw.unknown_orders_count,
     notes: raw.notes,

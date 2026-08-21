@@ -1,0 +1,15 @@
+# Keep runtime image inputs intentionally small and free of local state.
+.env
+.env.*
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+tests/
+data/
+artifacts/
+backups/
+*.db
+*.sqlite*
+*.log

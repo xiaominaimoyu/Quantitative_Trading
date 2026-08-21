@@ -304,7 +304,7 @@ export default function AppLayout() {
                   i === crumbs.length - 1 || !c.path ? (
                     <span style={{ color: 'rgba(0,0,0,0.88)' }}>{c.label}</span>
                   ) : (
-                    <Link to={c.path}>{c.label}</Link>
+                    <Link to={c.path} style={{ color: '#595959' }}>{c.label}</Link>
                   ),
               }))}
             />
@@ -313,7 +313,7 @@ export default function AppLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
             <Tag
               style={{
-                color: semanticColors.success,
+                color: '#237804',
                 backgroundColor: 'rgba(56,158,13,0.1)',
                 borderColor: 'transparent',
                 margin: 0,
