@@ -1,55 +1,73 @@
 /**
- * 设计令牌（Design Tokens）
+ * 设计令牌（Design Tokens）— v2 别名层
  *
- * 语义色（系统状态）与行情色（市场涨跌）刻意隔离：
- * - 语义色：主色/成功/警告/错误/处理中/信息，注入 AntD ConfigProvider。
- * - 行情色：红涨绿跌（normal）或蓝涨橙跌（colorblind），经 CSS 变量
- *   --market-up / --market-down 暴露给图表与数字组件，随主题切换。
+ * 本文件仅作 re-export，保证存量组件 import 不破坏。
+ * 真实令牌数据在 ./tokens/v2.ts。
+ *
+ * 语义色取浅色主题值（与存量一致）；
+ * 行情色取浅色 normal/colorblind（与存量一致）。
  */
 
+import {
+  colorPalette,
+  marketColors as v2MarketColors,
+  fontStacks as v2FontStacks,
+  layoutTokens as v2LayoutTokens,
+  type MarketTheme as V2MarketTheme,
+} from './tokens/v2'
+
+// ─────────────────────────────────────────────
+// 语义色（取浅色主题，与存量一致）
+// ─────────────────────────────────────────────
+
 export const semanticColors = {
-  /** 主色 */
-  primary: '#2F54EB',
-  /** 成功 */
-  success: '#389E0D',
-  /** 警告 */
-  warning: '#D48806',
-  /** 错误 */
-  error: '#CF1322',
-  /** 处理中 */
-  processing: '#1677FF',
-  /** 信息 */
+  primary: colorPalette.light.colorPrimary,
+  success: colorPalette.light.colorSuccess,
+  warning: colorPalette.light.colorWarning,
+  error: colorPalette.light.colorError,
+  processing: colorPalette.light.colorProcessing,
   info: '#595959',
 } as const
 
 export type SemanticColorKey = keyof typeof semanticColors
 
-/** 色觉辅助主题 */
+// ─────────────────────────────────────────────
+// 行情色（取浅色主题，与存量一致）
+// ─────────────────────────────────────────────
+
 export const marketColors = {
-  /** 正常：红涨绿跌 */
-  normal: { up: '#CF1322', down: '#237804' },
-  /** 色觉辅助：蓝涨橙跌 */
-  colorblind: { up: '#0958D9', down: '#D46B08' },
+  normal: {
+    up: v2MarketColors.light.normal.up,
+    down: v2MarketColors.light.normal.down,
+  },
+  colorblind: {
+    up: v2MarketColors.light.colorblind.up,
+    down: v2MarketColors.light.colorblind.down,
+  },
 } as const
 
-export type MarketTheme = keyof typeof marketColors
+export type MarketTheme = V2MarketTheme
 
-/** 中文系统字体栈 */
-export const fontStacks = {
-  system:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-  /** 等宽字体：ID / 哈希 */
-  mono: "'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', Menlo, monospace",
-} as const
+// ─────────────────────────────────────────────
+// 字体栈
+// ─────────────────────────────────────────────
 
-/** 布局常量（桌面优先基准 1440px） */
+export const fontStacks = v2FontStacks
+
+// ─────────────────────────────────────────────
+// 布局常量（沿用 v2，siderWidth 232、contentMaxWidth 1600）
+// ─────────────────────────────────────────────
+
 export const layoutTokens = {
-  siderWidth: 224,
-  headerHeight: 56,
-  contentMaxWidth: 1440,
+  siderWidth: v2LayoutTokens.siderWidth,
+  headerHeight: v2LayoutTokens.headerHeight,
+  contentMaxWidth: v2LayoutTokens.contentMaxWidth,
 } as const
 
-/** CSS 变量名（ThemeContext 写入 :root） */
+// ─────────────────────────────────────────────
+// CSS 变量名（ThemeContext 写入 :root）
+// ─────────────────────────────────────────────
+
 export const marketCssVars = {
   up: '--market-up',
   down: '--market-down',

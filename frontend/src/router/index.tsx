@@ -11,7 +11,7 @@
 
 import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router'
-import AppLayout from '@/layouts/AppLayout'
+import AppShellV2 from '@/layouts/AppShellV2'
 
 import DashboardPage from '@/pages/Dashboard'
 import DatasetListPage from '@/pages/DatasetList'
@@ -54,7 +54,7 @@ const crumb = (fn: RouteHandle['crumb']): RouteHandle => ({ crumb: fn })
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppLayout />,
+    element: <AppShellV2 />,
     children: [
       { index: true, element: <DashboardPage /> },
 

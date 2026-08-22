@@ -15,7 +15,8 @@
     "e2e:install": "playwright install chromium",
     "e2e:research": "playwright test --project=research-flow",
     "e2e:a11y": "playwright test --project=accessibility",
-    "e2e:smoke": "node ../scripts/browser_closeout.mjs"
+    "e2e:smoke": "node ../scripts/browser_closeout.mjs",
+    "tokens:audit": "tsx scripts/audit-tokens.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",

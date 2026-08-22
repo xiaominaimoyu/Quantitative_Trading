@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark" data-density="compact" data-market="normal">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.svg" />
-    <title>Quantitative Trading</title>
+    <title>量化研究终端 · Quantitative Trading</title>
+    <style>
+      /* Critical CSS: 防止首屏白屏闪烁（FOUC），预设暗色基调 */
+      :root {
+        --bg-page: #0E1117;
+        --bg-container: #161B26;
+        --text-primary: rgba(255, 255, 255, 0.92);
+        --text-secondary: rgba(255, 255, 255, 0.65);
+        --text-tertiary: rgba(255, 255, 255, 0.45);
+        --color-primary: #5B7CFF;
+        --market-up: #FF5C5C;
+        --market-down: #2FBF71;
+        --density-table-row-height: 40px;
+        --density-card-padding: 12px;
+        --density-font-size: 13px;
+        --density-menu-item-height: 36px;
+        --density-control-height: 28px;
+        --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      }
+      html, body, #root { height: 100%; margin: 0; }
+      body {
+        font-family: var(--font-system);
+        font-size: var(--density-font-size);
+        background: var(--bg-page);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
