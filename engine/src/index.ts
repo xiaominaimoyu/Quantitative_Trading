@@ -15,4 +15,4 @@ export * from './cost/index.js';
 export * from './execution/index.js';
 export * from './risk/index.js';
 export * from './engine/index.js';
-export * from './data/index.js';
+export * from './data-quality/index.js';
