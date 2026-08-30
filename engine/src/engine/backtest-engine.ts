@@ -142,7 +142,7 @@ export function runBacktest(input: BacktestInput, config: BacktestConfig): Backt
         continue;
       }
 
-      const orders = input.strategy.onBar(snapshotContext(bar, lastEquity, portfolio));
+      const orders = input.strategy.onBar(snapshotContext(symbol, bar, lastEquity, portfolio));
       for (const order of orders) {
         processOrder(order, bar, timestamp, {
           equity: lastEquity,
@@ -298,13 +298,20 @@ function processOrder(
 /**
  * Build the strategy context with a read-only portfolio snapshot.
  *
+ * @param symbol - Symbol the bar belongs to.
  * @param bar - Current bar.
  * @param equity - Previous-close equity.
  * @param portfolio - Ledger to snapshot.
  * @returns Frozen-ish context for the strategy.
  */
-function snapshotContext(bar: Bar, equity: number, portfolio: Portfolio): BarContext {
+function snapshotContext(
+  symbol: string,
+  bar: Bar,
+  equity: number,
+  portfolio: Portfolio,
+): BarContext {
   return {
+    symbol,
     bar,
     equity,
     portfolio: {

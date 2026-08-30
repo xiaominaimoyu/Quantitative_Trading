@@ -16,3 +16,4 @@ export * from './execution/index.js';
 export * from './risk/index.js';
 export * from './engine/index.js';
 export * from './data-quality/index.js';
+export * from './experiment/index.js';

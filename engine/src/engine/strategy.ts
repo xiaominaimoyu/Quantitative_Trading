@@ -21,6 +21,8 @@ export interface PortfolioSnapshot {
 
 /** Context passed to the strategy for every bar. */
 export interface BarContext {
+  /** Symbol this bar belongs to (the engine iterates per symbol). */
+  readonly symbol: string;
   readonly bar: Bar;
   /** Equity marked at the previous close (or initial cash on day one). */
   readonly equity: number;
