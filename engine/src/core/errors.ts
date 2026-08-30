@@ -9,6 +9,8 @@
 /** Machine-readable error codes used across the engine. */
 export type EngineErrorCode =
   | 'invalid_cost_config'
+  | 'invalid_risk_config'
+  | 'invalid_input'
   | 'invalid_order'
   | 'insufficient_cash'
   | 'insufficient_position'
@@ -34,9 +36,11 @@ export class EngineError extends Error {
 export class ConfigError extends EngineError {
   /**
    * @param message - Description of the invalid configuration.
+   * @param code - Specific config error code; defaults to the cost-model
+   * code for backward compatibility. Risk limits pass `invalid_risk_config`.
    */
-  constructor(message: string) {
-    super('invalid_cost_config', message);
+  constructor(message: string, code: EngineErrorCode = 'invalid_cost_config') {
+    super(code, message);
     this.name = 'ConfigError';
   }
 }
