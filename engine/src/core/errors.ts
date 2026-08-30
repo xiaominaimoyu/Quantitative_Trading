@@ -10,6 +10,7 @@
 export type EngineErrorCode =
   | 'invalid_cost_config'
   | 'invalid_risk_config'
+  | 'invalid_data_config'
   | 'invalid_input'
   | 'invalid_order'
   | 'insufficient_cash'
