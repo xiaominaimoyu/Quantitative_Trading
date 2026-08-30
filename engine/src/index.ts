@@ -20,3 +20,4 @@ export * from './experiment/index.js';
 export * from './metrics/index.js';
 export * from './compare/index.js';
 export * from './paper/index.js';
+export * from './strategy/index.js';
